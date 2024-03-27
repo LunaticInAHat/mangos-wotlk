@@ -58,6 +58,57 @@ ObjectGuid CreatureData::GetObjectGuid(uint32 lowguid) const
     return ObjectMgr::GetCreatureTemplate(id)->GetObjectGuid(lowguid);
 }
 
+uint32 CreatureData::GetRandomRespawnTime() const
+{
+    uint32 secs = urand(spawntimesecsmin, spawntimesecsmax);
+
+    float rate = 0.0f;
+    uint32 minSecs = 0u;
+    uint32 maxSecs = 0u;
+    CreatureInfo const* cinfo = ObjectMgr::GetCreatureTemplate(id);
+    if (cinfo)
+    {
+        switch (cinfo->Rank)
+        {
+            case CREATURE_ELITE_RARE:
+                rate = sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_ELITE_RARE_RESPAWN);
+                break;
+            case CREATURE_ELITE_ELITE:
+                rate = sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_ELITE_ELITE_RESPAWN);
+                break;
+            case CREATURE_ELITE_RAREELITE:
+                rate = sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_ELITE_RAREELITE_RESPAWN);
+                break;
+            case CREATURE_ELITE_WORLDBOSS:
+                rate = sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_ELITE_WORLDBOSS_RESPAWN);
+                break;
+            default:
+                // Only "normal" mobs get min & max respawn times applied to them, because messing with
+                // elites would probably break rare spawns, dungeons, world bosses, etc.
+                rate = sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_NORMAL_RESPAWN);
+                minSecs = sWorld.getConfig(CONFIG_UINT32_CREATURE_RESPAWN_NORMAL_MIN_SECS);
+                maxSecs = sWorld.getConfig(CONFIG_UINT32_CREATURE_RESPAWN_NORMAL_MAX_SECS);
+                break;
+        }
+    }
+    if (rate > 0.0f)
+    {
+        secs /= rate;
+    }
+    if (secs < minSecs)
+    {
+        return minSecs;
+    }
+    else if (maxSecs && (secs > maxSecs))
+    {
+        return maxSecs;
+    }
+    else
+    {
+        return secs;
+    }
+}
+
 TrainerSpell const* TrainerSpellData::Find(uint32 spell_id) const
 {
     TrainerSpellMap::const_iterator itr = spellList.find(spell_id);
